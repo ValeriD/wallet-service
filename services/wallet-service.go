@@ -7,12 +7,12 @@ package services
 // #include <TrustWalletCore/TWData.h>
 // #include <TrustWalletCore/TWPrivateKey.h>
 // #include <TrustWalletCore/TWPublicKey.h>
+// #include <TrustWalletCore/TWCoinTypeConfiguration.h>
 import "C"
 import (
 	"errors"
     "github.com/ValeriD/wallet-service/entities"
 	"github.com/ValeriD/wallet-service/helpers"
-	"encoding/hex"
 )
 
 type WalletService interface{
@@ -21,12 +21,18 @@ type WalletService interface{
 	/**
 	* Generating an derrived address for the specified code
 	* @param coinType Satoshi's number for the coin
-	* @param 
+	* @param addressIndex - used by for derivation of the wallet. If it is used once it will return the previous generated address, else will create  a new derived address
+	* @return new Address object
 	*/
 	GenerateAddress(coinType uint32 , addressIndex uint32 ) entities.Address
 
-
-	GenerateKeyPair(coinType C.enum_TWCoinType , addressIndex C.uint32_t) (string,string)
+	/**
+	* Generating a pair of public and private keys for the provided coin type and address index
+	* @param coinType 
+	* @param addressIndex - used by for derivation of the wallet. If it is used once it will return the previous generated address, else will create  a new derived address
+	* @return public and private keys 
+	*/
+	generatePublicKey(coinType C.enum_TWCoinType , addressIndex C.uint32_t) string
 }
 
 // Implementation of the interface
@@ -70,25 +76,21 @@ func CreateWallet() (*C.struct_TWHDWallet, error){
 
 
 func (service *walletService) GenerateAddress(coinType uint32 , addressIndex uint32 ) entities.Address{
-	privateKey, publicKey := service.GenerateKeyPair(coinType, C.uint32_t(addressIndex))
+	publicKey := service.generatePublicKey(coinType, C.uint32_t(addressIndex))
 
 	return entities.Address{
 						PublicKey: publicKey,
-						PrivateKey: privateKey, 
+						CoinType: helpers.ConvertTWStringToGoString(C.TWCoinTypeConfigurationGetID(coinType)), 
 	}
 }
 
-func (service *walletService) GenerateKeyPair(coinType C.enum_TWCoinType , addressIndex C.uint32_t) (string,string){
+func (service *walletService) generatePublicKey(coinType C.enum_TWCoinType , addressIndex C.uint32_t) string{
 	privateKey := C.TWHDWalletGetKeyBIP44(service.wallet, coinType, 0 ,0 , addressIndex)
-
-	privateKeyData := C.TWPrivateKeyData(privateKey)
-
-	privateKeyString := hex.EncodeToString(helpers.ConvertTWDataToGoBytes(privateKeyData))
 
 	publicKey := C.TWCoinTypeDeriveAddress(coinType, privateKey)
 
-	publicKeyString := helpers.ConvertTWStringGoToString(publicKey)
-	return privateKeyString, publicKeyString
+	publicKeyString := helpers.ConvertTWStringToGoString(publicKey)
+	return publicKeyString
 }
 
 
