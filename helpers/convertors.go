@@ -16,18 +16,19 @@ func ConvertGoStringToTWString(str string) unsafe.Pointer{
 	return resStr
 }
 
-func  ConveretTWDataToGoBytes(data unsafe.Pointer) []byte{
-	cBytes := C.TWDataBytes(data)
-    cSize := C.TWDataSize(data)
-    return C.GoBytes(unsafe.Pointer(cBytes), C.int(cSize))
+func  ConvertTWStringToGoString(s unsafe.Pointer) string {
+    return C.GoString(C.TWStringUTF8Bytes(s))
+}
+
+func ConvertGoBytesToTWData(d []byte) unsafe.Pointer {
+    cBytes := C.CBytes(d)
+    defer C.free(unsafe.Pointer(cBytes))
+    data := C.TWDataCreateWithBytes((*C.uchar)(cBytes), C.ulong(len(d)))
+    return data
 }
 
 func  ConvertTWDataToGoBytes(d unsafe.Pointer) []byte {
     cBytes := C.TWDataBytes(d)
     cSize := C.TWDataSize(d)
     return C.GoBytes(unsafe.Pointer(cBytes), C.int(cSize))
-}
-
-func  ConvertTWStringGoToString(s unsafe.Pointer) string {
-    return C.GoString(C.TWStringUTF8Bytes(s))
 }
