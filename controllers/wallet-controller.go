@@ -39,7 +39,7 @@ func (walletController *walletController) generateAddress(ctx *gin.Context, coin
 		ctx.JSON(http.StatusBadRequest, gin.H{ "status": "failed", "message": errInvalidAddressIndex.Error()})	
 		return
 	}
-
+	//TODO get the cointype based on provided string in the query
 	address := walletController.service.GenerateAddress(coinType, uint32(addressIndexUint64))
 
 	ctx.JSON(http.StatusOK, gin.H{ "status": "success", "address":address}) 
